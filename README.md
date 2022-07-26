@@ -78,11 +78,13 @@ The API can be imported in 2 ways:
 
 ## Usage:
 
-Simply call this function:
+Simply call this function in `modmain.lua`:
 
 ```py
    AddInventoryItemAtlas(atlas_path, assets_table)
 ```
+
+> **Obs:** It is `NOT` necessary to set an **inventoryitem.atlasname** in each prefab.
 
 ### Function documentation:
 
@@ -143,7 +145,7 @@ Simply call this function:
   
   <dl><dd><dl><dd>
   
-  It also demonstrates the `NOT` use of `AddInventoryItemAtlas` load assets feature. Notice the `ATLAS BUILD` asset.
+  It also demonstrates the `NOT` use of `AddInventoryItemAtlas` load assets feature. Notice the `ATLAS_BUILD` asset.
     
 ```py
 📁 mod_folder/
