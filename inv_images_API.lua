@@ -30,7 +30,7 @@ local function ProcessAtlas(atlas, imagename)
     end
 
     local success, file = _G.pcall(io.open, atlas)
-    assert(success, '[API]: The atlas "'..atlas..'" can not be found.')
+    _G.assert(success, '[API]: The atlas "'..atlas..'" can not be found.')
 
     local xml = file:read("*all")
     file:close()
@@ -43,7 +43,6 @@ local function ProcessAtlas(atlas, imagename)
             return atlas
         end
     end
-
 end
 
 local function ProcessNewImage(imagename)
@@ -106,7 +105,7 @@ local function LoadAsset(assets_table, ...)
 end
 
 local function AssertType(var, type_, param)
-    _G.assert(type(var) == type_, ('[API]: The param "%" must be a "%".'):format(param, type_))
+    _G.assert(type(var) == type_, ('[API]: The param "%s" must be a "%s".'):format(param, type_))
 end
 
 ------------------------------------------------------------------------------------
