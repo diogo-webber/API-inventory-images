@@ -1,4 +1,5 @@
 [API_download]: https://github.com/diogo-webber/API-inventory-images/releases/latest/download/inv_images_API.lua
+[mod_workshop]: https://steamcommunity.com/sharedfiles/filedetails/?id=2840451757
 
 
 
@@ -14,17 +15,64 @@
 
 ## Setup:
 
-1. [**Download**][API_download] the API file.
-1. Put the downloaded file in your mod files.
+The API can be imported in 2 ways:
 
-2. Import it with the `modimport` function.
+<dl><dd><dl><dd><dl>
+<details>
 
+<summary><h4>1. Having the API in your mod files:</h4></summary>
+  
+  <dl><dd><dl><dd>
+
+  1. [**Download**][API_download] the API file.
+  2. Put the downloaded file in your mod files.
+
+  3. Import it with the `modimport` function.
+    
+<dl><dd><dl><dd><dl><dd><dl>
+
+  ```py
+    modimport("path/to/inv_images_API.lua")
+  ```
+  
+</dl></dd></dl></dd></dl></dd></dl>
+  
+</dd></dl></dd></dl>
+
+</details><details>
+<summary><h4> 2. Using the workshop mod as a dependency:</summary></h4>
+  
+  <dl><dd><dl><dd>
+  
+  1. Add the [**mod**][mod_workshop] as a dependency on your mod's workshop page.
+
+<dl><dd><dl><dd><dl><dd><dl>
+      
+<img src="https://i.imgur.com/8KUNTM9.png" width="25%"/>
+    
+</dl></dd></dl></dd></dl></dd></dl>
+    
+  2. Import it with the `modimport` function.
+    
+<dl><dd><dl><dd><dl><dd><dl>
+  
 ```py
-  modimport("path/to/inv_images_API.lua")
+  modimport("../workshop-2840451757/inv_images_API.lua")
 ```
-
+  
+</dl></dd></dl></dd></dl></dd></dl>
+    
 <br>
-
+    
+  `Obs:` This method is good for keeping the API up to date.
+    
+<br>
+  
+</details>
+    
+</dd></dl></dd></dl>
+  
+</dl></dd></dl></dd></dl>
 
 
 
@@ -45,8 +93,11 @@ Simply call this function:
 
 #### **Parameters:**
 
-- ㅤ`atlas_path` (string) -  The xml file path.
-- ㅤ`assets_table` (table) - The "Assets" table, to load the atlas assets. Not required.
+  <dl><dd>
+    
+- `atlas_path` (string) -  The xml file path.
+- `assets_table` (table) - The "Assets" table, to load the atlas assets. Not required.
+  </dd></dl>
 
 </dd></dl></dd></dl></dd></dl>
 
@@ -57,9 +108,20 @@ Simply call this function:
 ```
 <br>
 
-## Usage Exemple: 
+## Usage Exemples: 
 
-```py
+- These are just examples! Your mod doesn't need to be organized this way.
+
+<dl><dd><dl><dd><dl>
+<details>
+
+<summary><h4>1. Having the API in your mod files:</h4></summary>
+  
+  <dl><dd><dl><dd>
+
+  It also demonstrates the use of the `AddInventoryItemAtlas` load assets feature.
+
+  ```py
 📁 mod_folder/
     📁 images/
         📄 itemicons.xml
@@ -73,17 +135,50 @@ Simply call this function:
         >> Assets = {...}
         >> AddInventoryItemAtlas("images/itemicons.xml", Assets)
 ```
+  
+</dd></dl></dd></dl>
 
-This is just an example! Your mod doesn't need to be organized this way.
-
+</details><details>
+<summary><h4> 2. Using the workshop mod as a dependency:</summary></h4>
+  
+  <dl><dd><dl><dd>
+  
+  It also demonstrates the `NOT` use of `AddInventoryItemAtlas` load assets feature. Notice the `ATLAS BUILD` asset.
+    
+```py
+📁 mod_folder/
+    📁 images/
+        📄 myinventoryimages.xml
+        🌆 myinventoryimages.tex
+        
+    📄 modmain.lua
+        >> Assets = {
+              Asset("ATLAS", "images/myinventoryimages.xml"),
+              Asset("IMAGE", "images/myinventoryimages.tex"),
+              Asset("ATLAS_BUILD", "images/myinventoryimages.xml", 256),
+           }
+        
+        >> modimport("../workshop-2840451757/inv_images_API.lua")
+        >> AddInventoryItemAtlas("images/myinventoryimages.xml")
+```
+   
 <br>
+  
+</details>
+    
+</dd></dl></dd></dl>
+  
+</dl></dd></dl></dd></dl>
 
-<h2 align="center">In Game Picture:</h2>
+<hr>
+
+<details><summary align="center"><h3>In Game Picture:</h3></summary>
 
 <p align="center">
   <img src="https://steamuserimages-a.akamaihd.net/ugc/1901100139830286204/6E2494D49D532FB78E893583322CC68AA9506A83/" alt="Preview Image" width=70%/>
 </p>
 
+</details>
 <br>
 
 ## 📜 License
