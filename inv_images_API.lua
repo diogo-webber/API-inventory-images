@@ -105,6 +105,10 @@ local function LoadAsset(assets_table, ...)
     table.insert(assets_table, Asset(...))
 end
 
+local function AssertType(var, type_, param)
+    _G.assert(type(var) == type_, ('[API]: The param "%" must be a "%".'):format(param, type_))
+end
+
 ------------------------------------------------------------------------------------
 
 --> Client function:
@@ -117,13 +121,13 @@ end
 ---
 ------------------------------------------------------------------------------
 function _G.AddInventoryItemAtlas(atlas_path, assets_table)
-    assert(type(atlas_path) == "string", "[API]: The param 'atlas_path' must be a string.")
-    assert(type(assets_table) == "table", "[API]: The param 'assets_table' must be a table.")
+    AssertType(atlas_path, "string", "atlas_path")
     
     local atlas = _G.resolvefilepath(CheckExtension(atlas_path))
     table.insert(inventoryItemAtlasses, atlas)
-
+    
     if assets_table then 
+        AssertType(assets_table, "table", "assets_table")
         LoadAsset(assets_table, "ATLAS", atlas_path)
         LoadAsset(assets_table, "IMAGE", atlas_path:gsub(".xml", ".tex"))
         LoadAsset(assets_table,"ATLAS_BUILD", atlas_path, 256)
