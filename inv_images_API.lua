@@ -3,18 +3,32 @@
 -- |      Library Designed by Leonidas IV  - Copyright 2022-2022      |
 --  ================================================================== --
 
+local API_VERSION = "1.0.3"
+
+------------------------------------------------------------------------------------
+
 local _G = GLOBAL
 
-if _G.rawget(_G, INV_IMAGES_API_LOADED) then return end -- Don't load the file again ;)
+local GLOBAL_VERSION = _G.rawget(_G, INV_IMAGES_API_VERSION)
 
-_G.INV_IMAGES_API_LOADED = true
-_G.INV_IMAGES_API_VERSION = "1.0"
+local function v_number(v) return _G.tonumber(v:gsub("%.", "")) or 0 end
+
+if GLOBAL_VERSION then
+    if v_number(API_VERSION) < v_number(GLOBAL_VERSION) then
+        AddInventoryItemAtlas = _G.AddInventoryItemAtlas --> Make the Fn be in the mod env too.
+        return -- Load only the latest version ;)
+    end
+end
+
+_G.INV_IMAGES_API_VERSION = API_VERSION
+
+------------------------------------------------------------------------------------
 
 --> Abstractions:
 
 local HAMenabled = _G.IsDLCEnabled(_G.PORKLAND_DLC)
 
-local inventoryItemAtlasses = not HAMenabled and {} or {"images/inventoryimages.xml", "images/inventoryimages_2.xml"}
+local inventoryItemAtlasses = HAMenabled and {"images/inventoryimages_2.xml"} or {}
 local inventoryItemAtlasLookup = {}
 
 local io = _G.require("io")
@@ -22,6 +36,8 @@ local io = _G.require("io")
 ------------------------------------------------------------------------------------
 
 local function ProcessAtlas(atlas, imagename)
+    local valid_atlas = nil
+
     if HAMenabled then
         if _G.TheSim:AtlasContains(atlas, imagename) then
             inventoryItemAtlasLookup[imagename] = atlas
@@ -39,15 +55,19 @@ local function ProcessAtlas(atlas, imagename)
 
     for tex in images do
         inventoryItemAtlasLookup[tex] = atlas --> Cache the textures.
+
         if imagename == tex then
-            return atlas
+            valid_atlas = atlas
         end
     end
+
+    return valid_atlas
 end
 
 local function ProcessNewImage(imagename)
     for _, atlas in ipairs(inventoryItemAtlasses) do
         local successed_atlas = ProcessAtlas(atlas, imagename)
+
         if successed_atlas then
             return successed_atlas
         end
@@ -63,38 +83,36 @@ end
 
 local GetInventoryItemAtlas = _G.GetInventoryItemAtlas
 
-if not HAMenabled then --> Port the GetInventoryItemAtlas uses from HAM.
-    local function HookOnDrawnFn(inst)        
-        local _OnDrawnFn = inst.components.drawable.ondrawnfn
-        inst.components.drawable.ondrawnfn = function(inst, image, src)
-            _OnDrawnFn(inst, image, src)
-            if image ~= nil then
-                local atlas = (src and src.components.inventoryitem and src.components.inventoryitem:GetAtlas()) or GetInventoryItemAtlas(image..".tex") 
-                inst.AnimState:OverrideSymbol("SWAP_SIGN", atlas, image..".tex")
-            end
+local function HookOnDrawnFn(inst)        
+    local _OnDrawnFn = inst.components.drawable.ondrawnfn
+    inst.components.drawable.ondrawnfn = function(inst, image, src)
+        _OnDrawnFn(inst, image, src)
+        if image ~= nil then
+            local atlas = GetInventoryItemAtlas(image..".tex") 
+            inst.AnimState:OverrideSymbol("SWAP_SIGN", atlas, image..".tex")
         end
     end
-
-    AddPrefabPostInit("minisign", HookOnDrawnFn)
-    AddPrefabPostInit("minisign_drawn", HookOnDrawnFn)
-
-    function _G.Ingredient:GetAtlas(imagename)
-        self.atlas = self.atlas or GetInventoryItemAtlas(imagename)
-        return self.atlas
-    end
-
-    function _G.Recipe:GetAtlas()
-        self.atlas = self.atlas or GetInventoryItemAtlas(self.image)
-        return self.atlas
-    end
-
-    AddComponentPostInit("inventoryitem", function(self)
-        function self:GetAtlas()
-            self.atlas = self.atlasname or GetInventoryItemAtlas(self:GetImage())
-            return self.atlas
-        end
-    end)
 end
+
+AddPrefabPostInit("minisign", HookOnDrawnFn)
+AddPrefabPostInit("minisign_drawn", HookOnDrawnFn)
+
+function _G.Ingredient:GetAtlas(imagename)
+    self.atlas = GetInventoryItemAtlas(imagename)
+    return self.atlas
+end
+
+function _G.Recipe:GetAtlas()
+    self.atlas = GetInventoryItemAtlas(self.image)
+    return self.atlas
+end
+
+AddComponentPostInit("inventoryitem", function(self)
+    function self:GetAtlas()
+        self.atlas = GetInventoryItemAtlas(self:GetImage())
+        return self.atlas
+    end
+end)
 
 local function CheckExtension(atlas)
     return atlas:find(".xml") and atlas or atlas..".xml"
@@ -132,3 +150,6 @@ function _G.AddInventoryItemAtlas(atlas_path, assets_table)
         LoadAsset(assets_table,"ATLAS_BUILD", atlas_path, 256)
     end
 end
+
+-- Make the Fn be in the mod env too.
+AddInventoryItemAtlas = _G.AddInventoryItemAtlas

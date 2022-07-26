@@ -1,14 +1,20 @@
+[API_download]: https://github.com/diogo-webber/API-inventory-images/releases/latest/download/inv_images_API.lua
+
+
+
 <img src="https://steamuserimages-a.akamaihd.net/ugc/1901100139831031404/934667EB9D759355529C3D93C0532B9F007217C8/" align="left" width="185px"/>
 
-<h1 style="padding-left: 200px">[API] Inventory Images</h1>
+# [API] Inventory Images
 
-<blockquote style="padding-left: 20px">An API for mod development, written in Lua, for the Klei Entertainment's game, Don't Starve.</blockquote>
+> An API for mod development, written in Lua, for the Klei Entertainment's game, Don't Starve.
 
 <br><br><br>
 
+
+
 ## Setup:
 
-1. [**Download**](https://github.com/diogo-webber/API-inventory-images/releases/latest/download/inv_images_API.lua) the API file.
+1. [**Download**][API_download] the API file.
 1. Put the downloaded file in your mod files.
 
 2. Import it with the `modimport` function.
@@ -19,12 +25,15 @@
 
 <br>
 
+
+
+
 ## Usage:
 
 Simply call this function:
 
 ```py
-   GLOBAL.AddInventoryItemAtlas(atlas_path, assets_table)
+   AddInventoryItemAtlas(atlas_path, assets_table)
 ```
 
 ### Function documentation:
@@ -44,7 +53,7 @@ Simply call this function:
  <br>
  
  ```py
-    Example: GLOBAL.AddInventoryItemAtlas("inventoryimages.xml", Assets)
+    Example: AddInventoryItemAtlas("inventoryimages.xml", Assets)
 ```
 <br>
 
@@ -62,7 +71,7 @@ Simply call this function:
     📄 modmain.lua
         >> modimport("scripts/inv_images_API.lua")
         >> Assets = {...}
-        >> GLOBAL.AddInventoryItemAtlas("images/itemicons.xml", Assets)
+        >> AddInventoryItemAtlas("images/itemicons.xml", Assets)
 ```
 
 This is just an example! Your mod doesn't need to be organized this way.
