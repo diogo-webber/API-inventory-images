@@ -3,7 +3,7 @@
 -- |      Library Designed by Leonidas IV  - Copyright 2022-2022      |
 --  ================================================================== --
 
-local API_VERSION = "1.0.3"
+local API_VERSION = "1.0.4"
 
 ------------------------------------------------------------------------------------
 
@@ -29,7 +29,9 @@ _G.INV_IMAGES_API_VERSION = API_VERSION
 local HAMenabled = _G.IsDLCEnabled(_G.PORKLAND_DLC)
 
 local inventoryItemAtlasses = HAMenabled and {"images/inventoryimages_2.xml"} or {}
-local inventoryItemAtlasLookup = {}
+
+-- This is global to permit direct inserts in the look up.
+_G.inventoryItemAtlasLookup = {}
 
 local io = _G.require("io")
 
@@ -40,7 +42,7 @@ local function ProcessAtlas(atlas, imagename)
 
     if HAMenabled then
         if _G.TheSim:AtlasContains(atlas, imagename) then
-            inventoryItemAtlasLookup[imagename] = atlas
+            _G.inventoryItemAtlasLookup[imagename] = atlas
             return atlas
         end
     end
@@ -54,7 +56,7 @@ local function ProcessAtlas(atlas, imagename)
     local images = xml:gmatch('<Element name="(.-)"')
 
     for tex in images do
-        inventoryItemAtlasLookup[tex] = atlas --> Cache the textures.
+        _G.inventoryItemAtlasLookup[tex] = atlas --> Cache the textures.
 
         if imagename == tex then
             valid_atlas = atlas
@@ -81,14 +83,17 @@ function _G.GetInventoryItemAtlas(imagename) --> You don't need to call this
     return inventoryItemAtlasLookup[imagename] or ProcessNewImage(imagename)
 end
 
+------------------------------------------------------------------------------------
+
 local GetInventoryItemAtlas = _G.GetInventoryItemAtlas
 
-local function HookOnDrawnFn(inst)        
+local function HookOnDrawnFn(inst)
     local _OnDrawnFn = inst.components.drawable.ondrawnfn
     inst.components.drawable.ondrawnfn = function(inst, image, src)
         _OnDrawnFn(inst, image, src)
-        if image ~= nil then
-            local atlas = GetInventoryItemAtlas(image..".tex") 
+        
+        local atlas = GetInventoryItemAtlas(image..".tex")
+        if image ~= nil and atlas then
             inst.AnimState:OverrideSymbol("SWAP_SIGN", atlas, image..".tex")
         end
     end
@@ -97,22 +102,35 @@ end
 AddPrefabPostInit("minisign", HookOnDrawnFn)
 AddPrefabPostInit("minisign_drawn", HookOnDrawnFn)
 
+------------------------------------------------------------------------------------
+
+local function ChangedGetAtlas(image, pre_atlas)
+    local deflault_atlas = "images/inventoryimages.xml"
+
+    local atlas = GetInventoryItemAtlas(image)
+    local pre_atlas = pre_atlas and resolvefilepath(pre_atlas) or nil
+
+    return atlas == deflault_atlas and pre_atlas or atlas
+end
+
 function _G.Ingredient:GetAtlas(imagename)
-    self.atlas = GetInventoryItemAtlas(imagename)
+    self.atlas = ChangedGetAtlas(imagename, self.atlas)
     return self.atlas
 end
 
 function _G.Recipe:GetAtlas()
-    self.atlas = GetInventoryItemAtlas(self.image)
+    self.atlas = ChangedGetAtlas(self.image, self.atlas)
     return self.atlas
 end
 
 AddComponentPostInit("inventoryitem", function(self)
     function self:GetAtlas()
-        self.atlas = GetInventoryItemAtlas(self:GetImage())
+        self.atlas = ChangedGetAtlas(self:GetImage(), self.atlasname)
         return self.atlas
     end
 end)
+
+------------------------------------------------------------------------------------
 
 local function CheckExtension(atlas)
     return atlas:find(".xml") and atlas or atlas..".xml"
@@ -145,9 +163,10 @@ function _G.AddInventoryItemAtlas(atlas_path, assets_table)
     
     if assets_table then 
         AssertType(assets_table, "table", "assets_table")
+
         LoadAsset(assets_table, "ATLAS", atlas_path)
         LoadAsset(assets_table, "IMAGE", atlas_path:gsub(".xml", ".tex"))
-        LoadAsset(assets_table,"ATLAS_BUILD", atlas_path, 256)
+        LoadAsset(assets_table, "ATLAS_BUILD", atlas_path, 256)
     end
 end
 
