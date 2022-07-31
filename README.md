@@ -59,6 +59,53 @@ The API can be imported in 2 ways:
 ```py
   modimport("../workshop-2840451757/inv_images_API.lua")
 ```
+<br>
+
+Handling possible errors: (recommended)
+```lua
+local _G = GLOBAL
+
+local success = _G.pcall(modimport, "../workshop-2840451757/inv_images_API.lua")
+
+if success then
+    -- API calls.
+
+else
+    --> Show a warning if the file don't exist.
+    local PopupDialogScreen = _G.require "screens/popupdialog"
+    local API_mod_url = "steam://openurl/https://steamcommunity.com"..
+                        "/sharedfiles/filedetails/?id=2840451757"
+    
+    _G.API_warning_showed = _G.rawget(_G, API_warning_showed) or false
+
+    if not _G.API_warning_showed then
+        AddGlobalClassPostConstruct("screens/mainscreen", "MainScreen", function(self)
+            local _OnBecomeActive = self.OnBecomeActive
+            function self:OnBecomeActive()
+                _OnBecomeActive(self)
+
+                if not _G.API_warning_showed then
+                    _G.API_warning_showed = true
+
+                    local popup = PopupDialogScreen(
+                        _G.KnownModIndex:GetModFancyName(modname).." Warning", 
+                        "The mod needs the \"[API] Inventory Images\" mod downloaded!",
+                        {
+                            {text="Ok", cb = function() _G.TheFrontEnd:PopScreen() end},
+                            {text="Download It", cb = function() _G.VisitURL(API_mod_url) end}
+                        }
+                    )
+
+                    popup.title:SetPosition(0, 60, 0)
+                    popup.text:SetPosition(0, -50, 0)
+
+                    _G.TheFrontEnd:PushScreen(popup)
+                end
+            end
+        end)
+    end
+end
+```
   
 </dl></dd></dl></dd></dl></dd></dl>
     
