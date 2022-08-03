@@ -11,8 +11,10 @@ local _G = GLOBAL
 
 local HAMenabled = _G.IsDLCEnabled(_G.PORKLAND_DLC)
 
-local function v_number(v) return _G.tonumber(v:gsub("%.", "")) or 0 end
-
+local function v_number(v)
+    local v = v:gsub("%.", "")
+    return _G.tonumber(v) or 0 
+end
 
 local API_loaded = _G.pcall(function() return _G.TheInvImagesAPI end)
 local TheInvImagesAPI = API_loaded and _G.TheInvImagesAPI or {}
