@@ -1,9 +1,10 @@
 [API_download]: https://github.com/diogo-webber/API-inventory-images/releases/latest/download/inv_images_API.lua
 [mod_workshop]: https://steamcommunity.com/sharedfiles/filedetails/?id=2840451757
+[ztools_repo]: https://gitlab.com/Zarklord/ztools/-/blob/master/README.md
 
 
 
-<img src="https://steamuserimages-a.akamaihd.net/ugc/1901100139831031404/934667EB9D759355529C3D93C0532B9F007217C8/" align="left" width="185px"/>
+<img src="https://steamuserimages-a.akamaihd.net/ugc/1885338314956316642/BAF16539AC82A746AA7DC557A24F68662078D564/" align="left" width="185px"/>
 
 # [API] Inventory Images
 
@@ -40,7 +41,7 @@ The API can be imported in 2 ways:
 </dd></dl></dd></dl>
 
 </details><details>
-<summary><h4> 2. Using the workshop mod as a dependency:</summary></h4>
+<summary><h4> 2. Using the workshop mod as a dependency (recommended):</summary></h4>
   
   <dl><dd><dl><dd>
   
@@ -48,11 +49,11 @@ The API can be imported in 2 ways:
 
 <dl><dd><dl><dd><dl><dd><dl>
       
-<img src="https://i.imgur.com/8KUNTM9.png" width="25%"/>
+<img src="https://i.imgur.com/8KUNTM9.png" width="30%"/>
     
 </dl></dd></dl></dd></dl></dd></dl>
     
-  2. Import it with the `modimport` function.
+  2. Import the API with the `modimport` function.
     
 <dl><dd><dl><dd><dl><dd><dl>
   
@@ -65,45 +66,45 @@ Handling possible errors: (recommended)
 ```lua
 local _G = GLOBAL
 
-local success = _G.pcall(modimport, "../workshop-2840451757/inv_images_API.lua")
+local API_path = "../workshop-2840451757/inv_images_API.lua"
+local API_file_exist = _G.softresolvefilepath(MODROOT..API_path)
 
-if success then
-    -- API calls.
-
+if API_file_exist then
+    modimport(API_path)
+    AddInventoryItemAtlas("path/to/atlas.xml", Assets)
 else
-    --> Show a warning if the file don't exist.
+    --> Show a simple warning popup.
     local PopupDialogScreen = _G.require "screens/popupdialog"
+    
     local API_mod_url = "steam://openurl/https://steamcommunity.com"..
                         "/sharedfiles/filedetails/?id=2840451757"
-    
-    _G.API_warning_showed = _G.rawget(_G, API_warning_showed) or false
+                        
+    local API_warning_showed = false
 
-    if not _G.API_warning_showed then
-        AddGlobalClassPostConstruct("screens/mainscreen", "MainScreen", function(self)
-            local _OnBecomeActive = self.OnBecomeActive
-            function self:OnBecomeActive()
-                _OnBecomeActive(self)
+    AddGlobalClassPostConstruct("screens/mainscreen", "MainScreen", function(self)
+        local _OnBecomeActive = self.OnBecomeActive
+        function self:OnBecomeActive()
+            _OnBecomeActive(self)
 
-                if not _G.API_warning_showed then
-                    _G.API_warning_showed = true
+            if not API_warning_showed then
+                API_warning_showed = true
 
-                    local popup = PopupDialogScreen(
-                        _G.KnownModIndex:GetModFancyName(modname).." Warning", 
-                        "The mod needs the \"[API] Inventory Images\" mod downloaded!",
-                        {
-                            {text="Ok", cb = function() _G.TheFrontEnd:PopScreen() end},
-                            {text="Download It", cb = function() _G.VisitURL(API_mod_url) end}
-                        }
-                    )
+                local popup = PopupDialogScreen(
+                _G.KnownModIndex:GetModFancyName(modname).." Warning", 
+                "The mod needs the \"[API] Inventory Images\" mod downloaded!",
+                    {
+                        {text="Ok", cb = function() _G.TheFrontEnd:PopScreen() end},
+                        {text="Download It", cb = function() _G.VisitURL(API_mod_url) end}
+                    }
+                )
 
-                    popup.title:SetPosition(0, 60, 0)
-                    popup.text:SetPosition(0, -50, 0)
+                popup.title:SetPosition(0, 60, 0)
+                popup.text:SetPosition(0, -50, 0)
 
-                    _G.TheFrontEnd:PushScreen(popup)
-                end
+                _G.TheFrontEnd:PushScreen(popup)
             end
-        end)
-    end
+        end
+    end)
 end
 ```
   
@@ -131,13 +132,11 @@ Simply call this function in `modmain.lua`:
    AddInventoryItemAtlas(atlas_path, assets_table)
 ```
 
-> **Obs:** It is `NOT` necessary to set an **inventoryitem.atlasname** in each prefab.
-
 ### Function documentation:
 
 <dl><dd><dl><dd><dl><dd>
 
-<blockquote>Adds a global inventory items atlas, compatible with mini signs, crafts, ingredients and shelves.</blockquote>
+<blockquote>Adds a global inventory items atlas, compatible with mini signs, crafts, ingredients and shelves.<br>It can be called indefinitely.</blockquote>
 
 
 #### **Parameters:**
@@ -219,7 +218,17 @@ Simply call this function in `modmain.lua`:
   
 </dl></dd></dl></dd></dl>
 
-<hr>
+<br>
+
+## Notes:
+
+
+- It is `NOT` necessary to set an **inventoryitem.atlasname** in each prefab.
+
+- Ideally, all your images should be in a single or few atlas, otherwise there may be a delay in loading the mod.<br>
+Use some tool like **[Ztools][ztools_repo]** to do this.
+
+<br><hr>
 
 <details><summary align="center"><h3>In Game Picture:</h3></summary>
 
