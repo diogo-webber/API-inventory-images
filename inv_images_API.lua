@@ -3,50 +3,42 @@
 -- |      Library Designed by Leonidas IV  - Copyright 2022-2022      |
 --  ================================================================== --
 
-local API_VERSION = "1.0.4"
+local API_VERSION = "1.2"
 
 ------------------------------------------------------------------------------------
 
 local _G = GLOBAL
 
-local GLOBAL_VERSION = _G.rawget(_G, INV_IMAGES_API_VERSION)
+local HAMenabled = _G.IsDLCEnabled(_G.PORKLAND_DLC)
 
 local function v_number(v) return _G.tonumber(v:gsub("%.", "")) or 0 end
 
-if GLOBAL_VERSION then
-    if v_number(API_VERSION) < v_number(GLOBAL_VERSION) then
-        AddInventoryItemAtlas = _G.AddInventoryItemAtlas --> Make the Fn be in the mod env too.
+
+local API_loaded = _G.pcall(function() return _G.TheInvImagesAPI end)
+local TheInvImagesAPI = API_loaded and _G.TheInvImagesAPI or {}
+
+
+if TheInvImagesAPI.version then
+    if v_number(API_VERSION) <= v_number(TheInvImagesAPI.version) then
+        env.AddInventoryItemAtlas = _G.AddInventoryItemAtlas --> Make the Fn be in the mod env too.
+        table.insert(TheInvImagesAPI.mods_using, KnownModIndex:GetModFancyName(modname))
         return -- Load only the latest version ;)
     end
 end
 
-_G.INV_IMAGES_API_VERSION = API_VERSION
-
 ------------------------------------------------------------------------------------
 
---> Abstractions:
+TheInvImagesAPI.version = API_VERSION
+TheInvImagesAPI.mods_using = TheInvImagesAPI.mods_using or {}
+TheInvImagesAPI.atlasLookup = TheInvImagesAPI.atlasLookup or {}
 
-local HAMenabled = _G.IsDLCEnabled(_G.PORKLAND_DLC)
+table.insert(TheInvImagesAPI.mods_using, KnownModIndex:GetModFancyName(modname))
 
-local inventoryItemAtlasses = HAMenabled and {"images/inventoryimages_2.xml"} or {}
-
--- This is global to permit direct inserts in the look up.
-_G.inventoryItemAtlasLookup = {}
+------------------------------------------------------------------------------------
 
 local io = _G.require("io")
 
-------------------------------------------------------------------------------------
-
-local function ProcessAtlas(atlas, imagename)
-    local valid_atlas = nil
-
-    if HAMenabled then
-        if _G.TheSim:AtlasContains(atlas, imagename) then
-            _G.inventoryItemAtlasLookup[imagename] = atlas
-            return atlas
-        end
-    end
-
+local function ProcessAtlas(atlas)
     local success, file = _G.pcall(io.open, atlas)
     _G.assert(success, '[API]: The atlas "'..atlas..'" can not be found.')
 
@@ -56,34 +48,65 @@ local function ProcessAtlas(atlas, imagename)
     local images = xml:gmatch('<Element name="(.-)"')
 
     for tex in images do
-        _G.inventoryItemAtlasLookup[tex] = atlas --> Cache the textures.
-
-        if imagename == tex then
-            valid_atlas = atlas
-        end
+        TheInvImagesAPI.atlasLookup[tex] = atlas --> Cache the textures.
     end
-
-    return valid_atlas
-end
-
-local function ProcessNewImage(imagename)
-    for _, atlas in ipairs(inventoryItemAtlasses) do
-        local successed_atlas = ProcessAtlas(atlas, imagename)
-
-        if successed_atlas then
-            return successed_atlas
-        end
-    end
-
-    return "images/inventoryimages.xml"
-end
-
--- A re-implementation of GetInventoryItemAtlas
-function _G.GetInventoryItemAtlas(imagename) --> You don't need to call this
-    return inventoryItemAtlasLookup[imagename] or ProcessNewImage(imagename)
 end
 
 ------------------------------------------------------------------------------------
+
+local function CheckExtension(atlas, ext)
+    return atlas:gsub(ext, "")..ext
+end
+
+local function LoadAsset(assets, ...)
+    table.insert(assets, Asset(...))
+end
+
+local function AssertType(var, type_, param)
+    _G.assert(type(var) == type_, ('[API]: The param "%s" must be a "%s".'):format(param, type_))
+end
+
+---Adds a global inventory items atlas, compatible with `mini signs`, `crafts`, `ingredients` and `shelves`.
+---
+---@param atlas_path string -> The xml file path.
+---@param assets_table? table -> The "Assets" table, to load the atlas assets. Not required.
+---`Example:`AddInventoryItemAtlas(`"images/inventoryimages.xml", Assets`)
+---
+------------------------------------------------------------------------------
+function _G.AddInventoryItemAtlas(atlas_path, assets_table)
+    AssertType(atlas_path, "string", "atlas_path")
+    
+    local atlas_path = CheckExtension(atlas_path, ".xml")
+    local atlas = _G.resolvefilepath(atlas_path)
+
+    ProcessAtlas(atlas)
+    
+    if assets_table then 
+        AssertType(assets_table, "table", "assets_table")
+
+        LoadAsset(assets_table, "ATLAS", atlas_path)
+        LoadAsset(assets_table, "IMAGE", atlas_path:gsub(".xml", ".tex"))
+        LoadAsset(assets_table, "ATLAS_BUILD", atlas_path, 256)
+    end
+end
+
+------------------------------------------------------------------------------------
+
+if HAMenabled then ProcessAtlas("images/inventoryimages_2.xml") end
+
+-- Make the fns be in the mod env too.
+env.AddInventoryItemAtlas = _G.AddInventoryItemAtlas
+
+_G.TheInvImagesAPI = TheInvImagesAPI
+
+------------------------------------------------------------------------------------
+
+    --> Implementation:
+
+-- A re-implementation of GetInventoryItemAtlas
+function _G.GetInventoryItemAtlas(imagename) --> You don't need to call this
+    return TheInvImagesAPI.atlasLookup[imagename] or "images/inventoryimages.xml"
+end
 
 local GetInventoryItemAtlas = _G.GetInventoryItemAtlas
 
@@ -105,12 +128,12 @@ AddPrefabPostInit("minisign_drawn", HookOnDrawnFn)
 ------------------------------------------------------------------------------------
 
 local function ChangedGetAtlas(image, pre_atlas)
-    local deflault_atlas = "images/inventoryimages.xml"
+    local default_atlas = "images/inventoryimages.xml"
 
     local atlas = GetInventoryItemAtlas(image)
-    local pre_atlas = pre_atlas and resolvefilepath(pre_atlas) or nil
+    local pre_atlas = pre_atlas and _G.resolvefilepath(pre_atlas) or nil
 
-    return atlas == deflault_atlas and pre_atlas or atlas
+    return atlas == default_atlas and pre_atlas or atlas
 end
 
 function _G.Ingredient:GetAtlas(imagename)
@@ -129,46 +152,3 @@ AddComponentPostInit("inventoryitem", function(self)
         return self.atlas
     end
 end)
-
-------------------------------------------------------------------------------------
-
-local function CheckExtension(atlas)
-    return atlas:find(".xml") and atlas or atlas..".xml"
-end
-
-local function LoadAsset(assets_table, ...)
-    table.insert(assets_table, Asset(...))
-end
-
-local function AssertType(var, type_, param)
-    _G.assert(type(var) == type_, ('[API]: The param "%s" must be a "%s".'):format(param, type_))
-end
-
-------------------------------------------------------------------------------------
-
---> Client function:
-
----Adds a global inventory items atlas, compatible with `mini signs`, `crafts`, `ingredients` and `shelves`.
----
----@param atlas_path string -> The xml file path.
----@param assets_table? table -> The "Assets" table, to load the atlas assets. Not required.
----`Example:`AddInventoryItemAtlas(`"images/inventoryimages.xml", Assets`)
----
-------------------------------------------------------------------------------
-function _G.AddInventoryItemAtlas(atlas_path, assets_table)
-    AssertType(atlas_path, "string", "atlas_path")
-    
-    local atlas = _G.resolvefilepath(CheckExtension(atlas_path))
-    table.insert(inventoryItemAtlasses, atlas)
-    
-    if assets_table then 
-        AssertType(assets_table, "table", "assets_table")
-
-        LoadAsset(assets_table, "ATLAS", atlas_path)
-        LoadAsset(assets_table, "IMAGE", atlas_path:gsub(".xml", ".tex"))
-        LoadAsset(assets_table, "ATLAS_BUILD", atlas_path, 256)
-    end
-end
-
--- Make the Fn be in the mod env too.
-AddInventoryItemAtlas = _G.AddInventoryItemAtlas
