@@ -3,7 +3,7 @@
 -- |      Library Designed by Leonidas IV  - Copyright 2022-2022      |
 --  ================================================================== --
 
-local API_VERSION = "1.2"
+local API_VERSION = "1.2.1"
 
 ------------------------------------------------------------------------------------
 
@@ -16,14 +16,13 @@ local function v_number(v)
     return _G.tonumber(v) or 0 
 end
 
-local API_loaded = _G.pcall(function() return _G.TheInvImagesAPI end)
+local API_loaded = table.containskey(_G, TheInvImagesAPI)
 local TheInvImagesAPI = API_loaded and _G.TheInvImagesAPI or {}
-
 
 if TheInvImagesAPI.version then
     if v_number(API_VERSION) <= v_number(TheInvImagesAPI.version) then
         env.AddInventoryItemAtlas = _G.AddInventoryItemAtlas --> Make the Fn be in the mod env too.
-        table.insert(TheInvImagesAPI.mods_using, KnownModIndex:GetModFancyName(modname))
+        table.insert(TheInvImagesAPI.mods_using, _G.KnownModIndex:GetModFancyName(modname))
         return -- Load only the latest version ;)
     end
 end
@@ -34,7 +33,7 @@ TheInvImagesAPI.version = API_VERSION
 TheInvImagesAPI.mods_using = TheInvImagesAPI.mods_using or {}
 TheInvImagesAPI.atlasLookup = TheInvImagesAPI.atlasLookup or {}
 
-table.insert(TheInvImagesAPI.mods_using, KnownModIndex:GetModFancyName(modname))
+table.insert(TheInvImagesAPI.mods_using, _G.KnownModIndex:GetModFancyName(modname))
 
 ------------------------------------------------------------------------------------
 
@@ -154,3 +153,7 @@ AddComponentPostInit("inventoryitem", function(self)
         return self.atlas
     end
 end)
+
+------------------------------------------------------------------------------------
+
+v_number, API_loaded, HAMenabled = nil, nil, nil
