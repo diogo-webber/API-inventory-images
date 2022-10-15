@@ -228,6 +228,8 @@ Simply call this function in `modmain.lua`:
 - Ideally, all your images should be in a single or few atlas, otherwise there may be a delay in loading the mod.<br>
 Use some tool like **[Ztools][ztools_repo]** to do this.
 
+- In order for icons to appear on mini signs and shelves, the dimension of textures (the images) must be a power of 2 (usually 64x64).
+
 <br><hr>
 
 <details><summary align="center"><h3>In Game Picture:</h3></summary>
